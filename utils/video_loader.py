@@ -7,9 +7,11 @@ def load_video():
     Returns:
         (imutils.VideoStream): Video stream
     """
+    input("Press ENTER to begin stream")
     print("[INFO] starting video stream...")
-    vs = VideoStream("http://192.168.1.89:4747/video").start()
-    # vs = VideoStream(0).start()
+    
+    # vs = VideoStream("http://192.168.1.89:4747/video").start()
+    vs = VideoStream(0).start()
     # vs = cv2.VideoCapture()
     return vs
 
@@ -22,5 +24,5 @@ def transform(frame):
     Returns:
         transformed frame
     """
-    frame = cv2.rotate(frame, cv2.ROTATE_180)
+    # frame = cv2.rotate(frame, cv2.ROTATE_180)
     return frame
