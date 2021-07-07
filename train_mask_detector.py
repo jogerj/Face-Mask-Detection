@@ -26,8 +26,8 @@ INIT_LR = 1e-4
 EPOCHS = 20
 BS = 32
 
-DIRECTORY = r"E:\Dev\Uni\Git\Face-Mask-Detection"
-CATEGORIES = ["any_mask", "no_mask"]
+DIRECTORY = "dataset"
+CATEGORIES = ["n95_mask", "no_mask", "op_mask"]
 
 # grab the list of images in our dataset directory, then initialize
 # the list of data (i.e., images) and class images
@@ -50,7 +50,7 @@ for category in CATEGORIES:
 # perform one-hot encoding on the labels
 lb = LabelBinarizer()
 labels = lb.fit_transform(labels)
-labels = to_categorical(labels)
+# labels = to_categorical(labels)
 
 data = np.array(data, dtype="float32")
 labels = np.array(labels)
@@ -80,7 +80,7 @@ headModel = AveragePooling2D(pool_size=(7, 7))(headModel)
 headModel = Flatten(name="flatten")(headModel)
 headModel = Dense(128, activation="relu")(headModel)
 headModel = Dropout(0.5)(headModel)
-headModel = Dense(2, activation="softmax")(headModel)
+headModel = Dense(3, activation="softmax")(headModel)
 
 # place the head FC model on top of the base model (this will become
 # the actual model we will train)
@@ -94,7 +94,7 @@ for layer in baseModel.layers:
 # compile our model
 print("[INFO] compiling model...")
 opt = Adam(lr=INIT_LR, decay=INIT_LR / EPOCHS)
-model.compile(loss="binary_crossentropy", optimizer=opt,
+model.compile(loss="categorical_crossentropy", optimizer=opt,
               metrics=["accuracy"])
 
 # train the head of the network
@@ -120,7 +120,7 @@ print(classification_report(testY.argmax(axis=1), predIdxs,
 
 # serialize the model to disk
 print("[INFO] saving mask detector model...")
-model.save("mask_detector.model", save_format="h5")
+model.save("mask_detector_testing.model", save_format="h5")
 
 # plot the training loss and accuracy
 N = EPOCHS

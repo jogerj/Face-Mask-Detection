@@ -5,12 +5,12 @@ from tensorflow.keras.models import load_model
 import utils.video_loader as video_loader
 import numpy as np
 import imutils
-import time
+# import time
 import cv2
-import os
+# import os
 
 
-def detect_and_predict_mask(frame, faceNet, maskNet, classNet):
+def detect_and_predict_mask(frame, faceNet, maskNet):
     # grab the dimensions of the frame and then construct a blob
     # from it
     (h, w) = frame.shape[:2]
@@ -27,7 +27,7 @@ def detect_and_predict_mask(frame, faceNet, maskNet, classNet):
     faces = []
     locs = []
     preds = []
-    classes = []
+    # classes = []
 
     # loop over the detections
     for i in range(0, detections.shape[2]):
@@ -68,11 +68,11 @@ def detect_and_predict_mask(frame, faceNet, maskNet, classNet):
         # in the above `for` loop
         faces = np.array(faces, dtype="float32")
         preds = maskNet.predict(faces, batch_size=32)
-        classes = classNet.predict(faces, batch_size=32)
+        # classes = classNet.predict(faces, batch_size=32)
 
     # return a 2-tuple of the face locations and their corresponding
     # locations
-    return (locs, preds, classes)
+    return (locs, preds)
 
 
 # load our serialized face detector model from disk
@@ -81,8 +81,8 @@ weightsPath = r"face_detector/res10_300x300_ssd_iter_140000.caffemodel"
 faceNet = cv2.dnn.readNet(prototxtPath, weightsPath)
 
 # load the face mask detector model from disk
-maskNet = load_model("mask_detector.model")
-classNet = load_model("mask_classifier.model")
+maskNet = load_model("mask_detector_testing.model")
+# classNet = load_model("mask_classifier.model")
 
 # initialize the video stream
 vs = video_loader.load_video()
@@ -96,26 +96,29 @@ while True:
 
     # detect faces in the frame and determine if they are wearing a
     # face mask or not
-    (locs, preds, classes) = detect_and_predict_mask(frame, faceNet, maskNet, classNet)
+    (locs, preds) = detect_and_predict_mask(frame, faceNet, maskNet)
 
     # loop over the detected face locations and their corresponding
     # locations
-    for (box, pred, mask_class) in zip(locs, preds, classes):
+    for (box, pred) in zip(locs, preds):
         # unpack the bounding box and predictions
         (startX, startY, endX, endY) = box
-        (mask, withoutMask) = pred
-        (n95_mask, op_mask) = mask_class
+        (n95_mask, no_mask, op_mask) = pred
+        # (n95_mask, op_mask) = mask_class
 
         # determine the class label and color we'll use to draw
         # the bounding box and text
-        if mask > withoutMask:
-            label = "N95" if n95_mask > op_mask else "OP"
-        else:
+        mask = max(n95_mask, no_mask, op_mask)
+        if(mask == n95_mask):
+            label = "N95"
+        elif(mask == no_mask):
             label = "No Mask"
+        else:
+            label = "OP"
         color = (0, 255, 0) if label != "No Mask" else (0, 0, 255)
 
         # include the probability in the label
-        label = "{}: {:.2f}%, {:.2f}%".format(label, max(mask, withoutMask) * 100, max(n95_mask, op_mask) * 100)
+        label = "{}: {:.2f}%".format(label, max(n95_mask, no_mask, op_mask) * 100)
 
         # display the label and bounding box rectangle on the output
         # frame
@@ -125,10 +128,9 @@ while True:
 
     # show the output frame
     cv2.imshow("Frame", frame)
-    key = cv2.waitKey(1) & 0xFF
 
     # if the `q` key was pressed, break from the loop
-    if key == ord("q"):
+    if cv2.waitKey(1) & 0xFF == ord("q"):
         break
 
 # do a bit of cleanup
