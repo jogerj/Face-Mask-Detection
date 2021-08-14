@@ -14,7 +14,7 @@ def detect_and_predict_mask(frame, faceNet, maskNet):
     # grab the dimensions of the frame and then construct a blob
     # from it
     (h, w) = frame.shape[:2]
-    blob = cv2.dnn.blobFromImage(frame, 1.0, (224, 224),
+    blob = cv2.dnn.blobFromImage(frame, 1.0, (400, 400),
                                  (104.0, 177.0, 123.0))
 
     # pass the blob through the network and obtain the face detections
@@ -52,7 +52,7 @@ def detect_and_predict_mask(frame, faceNet, maskNet):
             # ordering, resize it to 224x224, and preprocess it
             face = frame[startY:endY, startX:endX]
             face = cv2.cvtColor(face, cv2.COLOR_BGR2RGB)
-            face = cv2.resize(face, (224, 224))
+            face = cv2.resize(face, (400, 400))
             face = img_to_array(face)
             face = preprocess_input(face)
 
@@ -81,7 +81,8 @@ weightsPath = r"face_detector/res10_300x300_ssd_iter_140000.caffemodel"
 faceNet = cv2.dnn.readNet(prototxtPath, weightsPath)
 
 # load the face mask detector model from disk
-maskNet = load_model("mask_detector_testing.model")
+maskNet = load_model("mask_detector_testing5.tf")
+# maskNet = load_model("mask_detector_classifier.model")
 # classNet = load_model("mask_classifier.model")
 
 # initialize the video stream
@@ -111,12 +112,15 @@ while True:
         mask = max(n95_mask, no_mask, op_mask)
         if(mask == n95_mask):
             label = "N95"
+            color = (0, 255, 0)
         elif(mask == no_mask):
             label = "No Mask"
+            color = (0, 0, 255)
         else:
             label = "OP"
-        color = (0, 255, 0) if label != "No Mask" else (0, 0, 255)
+            color = (0, 255, 255)
 
+        print("n95 {:.2f}%, no_mask {:.2f}%, op {:.2f}%".format(n95_mask*100, no_mask*100, op_mask*100))
         # include the probability in the label
         label = "{}: {:.2f}%".format(label, max(n95_mask, no_mask, op_mask) * 100)
 

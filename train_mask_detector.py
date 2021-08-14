@@ -23,7 +23,7 @@ import os
 # initialize the initial learning rate, number of epochs to train for,
 # and batch size
 INIT_LR = 1e-4
-EPOCHS = 20
+EPOCHS = 40
 BS = 32
 
 DIRECTORY = "dataset"
@@ -40,7 +40,7 @@ for category in CATEGORIES:
     path = os.path.join(DIRECTORY, category)
     for img in os.listdir(path):
         img_path = os.path.join(path, img)
-        image = load_img(img_path, target_size=(224, 224))
+        image = load_img(img_path, target_size=(400, 400))
         image = img_to_array(image)
         image = preprocess_input(image)
 
@@ -56,7 +56,7 @@ data = np.array(data, dtype="float32")
 labels = np.array(labels)
 
 (trainX, testX, trainY, testY) = train_test_split(data, labels,
-                                                  test_size=0.20, stratify=labels, random_state=42)
+                                                  test_size=0.3, stratify=labels, random_state=42)
 
 # construct the training image generator for data augmentation
 aug = ImageDataGenerator(
@@ -71,7 +71,7 @@ aug = ImageDataGenerator(
 # load the MobileNetV2 network, ensuring the head FC layer sets are
 # left off
 baseModel = MobileNetV2(weights="imagenet", include_top=False,
-                        input_tensor=Input(shape=(224, 224, 3)))
+                        input_tensor=Input(shape=(400, 400, 3)))
 
 # construct the head of the model that will be placed on top of the
 # the base model
@@ -119,8 +119,9 @@ print(classification_report(testY.argmax(axis=1), predIdxs,
                             target_names=lb.classes_))
 
 # serialize the model to disk
-print("[INFO] saving mask detector model...")
-model.save("mask_detector_testing.model", save_format="h5")
+model_filename = "mask_detector_testing6.tf"
+print("[INFO] saving mask detector model... to", model_filename)
+model.save(model_filename, save_format="tf")
 
 # plot the training loss and accuracy
 N = EPOCHS
@@ -135,3 +136,4 @@ plt.xlabel("Epoch #")
 plt.ylabel("Loss/Accuracy")
 plt.legend(loc="lower left")
 plt.savefig("plot.png")
+print(H.history.keys())
