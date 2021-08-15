@@ -81,12 +81,22 @@ weightsPath = r"face_detector/res10_300x300_ssd_iter_140000.caffemodel"
 faceNet = cv2.dnn.readNet(prototxtPath, weightsPath)
 
 # load the face mask detector model from disk
-maskNet = load_model("mask_detector_testing5.tf")
+maskNet = load_model("mask_detector_testing6.tf")
 # maskNet = load_model("mask_detector_classifier.model")
 # classNet = load_model("mask_classifier.model")
 
 # initialize the video stream
 vs = video_loader.load_video()
+
+# setup counter
+# frame_history = {}
+# frame_history['n95_mask'] = []
+# frame_history['no_mask'] = []
+# frame_history['op_mask'] = []
+# n_mask = {}
+# n_mask['n95_mask'] = 0
+# n_mask['no_mask'] = 0
+# n_mask['op_mask'] = 0
 # loop over the frames from the video stream
 while True:
     # grab the frame from the threaded video stream and resize it
@@ -101,11 +111,14 @@ while True:
 
     # loop over the detected face locations and their corresponding
     # locations
+    # found_mask = {}
+    # found_mask['n95_mask'] = 0
+    # found_mask['no_mask'] = 0
+    # found_mask['op_mask'] = 0
     for (box, pred) in zip(locs, preds):
         # unpack the bounding box and predictions
         (startX, startY, endX, endY) = box
         (n95_mask, no_mask, op_mask) = pred
-        # (n95_mask, op_mask) = mask_class
 
         # determine the class label and color we'll use to draw
         # the bounding box and text
@@ -113,12 +126,15 @@ while True:
         if(mask == n95_mask):
             label = "N95"
             color = (0, 255, 0)
+            # found_mask['n95_mask'] += 1
         elif(mask == no_mask):
             label = "No Mask"
             color = (0, 0, 255)
+            # found_mask['no_mask'] += 1
         else:
             label = "OP"
             color = (0, 255, 255)
+            # found_mask['op_mask'] += 1
 
         print("n95 {:.2f}%, no_mask {:.2f}%, op {:.2f}%".format(n95_mask*100, no_mask*100, op_mask*100))
         # include the probability in the label
@@ -130,8 +146,18 @@ while True:
                     cv2.FONT_HERSHEY_SIMPLEX, 0.45, color, 2)
         cv2.rectangle(frame, (startX, startY), (endX, endY), color, 2)
 
+    # for mask_type in ['n95_mask', 'no_mask', 'op_mask']:
+    #     if len(frame_history[mask_type])<2:
+    #         frame_history[mask_type].append(found_mask[mask_type])
+    #     else:
+    #         frame_history[mask_type].pop(0)
+    #         frame_history[mask_type].append(found_mask[mask_type])
+    #     diff = max(frame_history[mask_type]) - min(frame_history[mask_type])
+    #     n_mask[mask_type] += diff
+    # print('n95: {}, none: {}, op: {}'.format(n_mask['n95_mask'], n_mask['no_mask'], n_mask['op_mask']))
+
     # show the output frame
-    cv2.imshow("Frame", frame)
+    cv2.imshow('Mask Detector', frame)
 
     # if the `q` key was pressed, break from the loop
     if cv2.waitKey(1) & 0xFF == ord("q"):

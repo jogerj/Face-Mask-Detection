@@ -23,7 +23,7 @@ import os
 # initialize the initial learning rate, number of epochs to train for,
 # and batch size
 INIT_LR = 1e-4
-EPOCHS = 40
+EPOCHS = 30
 BS = 32
 
 DIRECTORY = "dataset"
@@ -119,7 +119,7 @@ print(classification_report(testY.argmax(axis=1), predIdxs,
                             target_names=lb.classes_))
 
 # serialize the model to disk
-model_filename = "mask_detector_testing6.tf"
+model_filename = "mask_detector_testing7.tf"
 print("[INFO] saving mask detector model... to", model_filename)
 model.save(model_filename, save_format="tf")
 
