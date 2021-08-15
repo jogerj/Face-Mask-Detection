@@ -24,8 +24,8 @@ import os
 # initialize the initial learning rate, number of epochs to train for,
 # and batch size
 INIT_LR = 1e-4
-EPOCHS = 30
-BS = 32
+EPOCHS = 10
+BS = 64
 
 DIRECTORY = "dataset"
 CATEGORIES = ["n95_mask", "no_mask", "op_mask"]
@@ -52,7 +52,7 @@ aug = ImageDataGenerator(
 # load the MobileNetV2 network, ensuring the head FC layer sets are
 # left off
 baseModel = MobileNetV2(weights="imagenet", include_top=False,
-                        input_tensor=Input(shape=(400, 400, 3)))
+                        input_tensor=Input(shape=(224, 224, 3)))
 
 
 # grab the list of images in our dataset directory, then initialize
@@ -66,7 +66,7 @@ for category in CATEGORIES:
     path = os.path.join(DIRECTORY, category)
     for img in os.listdir(path):
         img_path = os.path.join(path, img)
-        image = load_img(img_path, target_size=(400, 400))
+        image = load_img(img_path, target_size=(224, 224))
         image = img_to_array(image)
         image = preprocess_input(image)
 
@@ -130,10 +130,10 @@ print(classification_report(testY.argmax(axis=1), predIdxs,
                             target_names=lb.classes_))
 
 # serialize the model to disk
-model_filename = "mask_detector_testing7.tf"
+model_filename = "mask_detector_testing8.tf"
 print("[INFO] saving mask detector model... to", model_filename)
 model.save(model_filename, save_format="tf")
-
+print('[INFO] plotting history graph')
 # plot the training loss and accuracy
 N = EPOCHS
 plt.style.use("ggplot")

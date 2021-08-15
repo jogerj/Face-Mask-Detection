@@ -81,7 +81,7 @@ weightsPath = r"face_detector/res10_300x300_ssd_iter_140000.caffemodel"
 faceNet = cv2.dnn.readNet(prototxtPath, weightsPath)
 
 # load the face mask detector model from disk
-maskNet = load_model("mask_detector_testing6.tf")
+maskNet = load_model("mask_detector_testing7.tf")
 # maskNet = load_model("mask_detector_classifier.model")
 # classNet = load_model("mask_classifier.model")
 
@@ -101,9 +101,16 @@ vs = video_loader.load_video()
 while True:
     # grab the frame from the threaded video stream and resize it
     # to have a maximum width of 400 pixels
-    frame = vs.read()
-    frame = video_loader.transform(frame)
-    frame = imutils.resize(frame, width=400)
+    try:
+        frame = vs.read()
+        frame = video_loader.transform(frame)
+        frame = imutils.resize(frame, width=600)
+    except Exception as e:
+        print(e)
+        prompt = input('Continue? [Y/n]')
+        if prompt.lower() == 'n':
+            break
+        continue
 
     # detect faces in the frame and determine if they are wearing a
     # face mask or not
@@ -158,6 +165,7 @@ while True:
 
     # show the output frame
     cv2.imshow('Mask Detector', frame)
+    cv2.setWindowProperty('Mask Detector', cv2.WND_PROP_TOPMOST, 1)
 
     # if the `q` key was pressed, break from the loop
     if cv2.waitKey(1) & 0xFF == ord("q"):
