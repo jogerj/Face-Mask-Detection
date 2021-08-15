@@ -11,6 +11,7 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
 from tensorflow.keras.preprocessing.image import img_to_array
 from tensorflow.keras.preprocessing.image import load_img
+from tensorflow import config as tf_config
 from tensorflow.keras.utils import to_categorical
 from sklearn.preprocessing import LabelBinarizer
 from sklearn.model_selection import train_test_split
@@ -28,6 +29,31 @@ BS = 32
 
 DIRECTORY = "dataset"
 CATEGORIES = ["n95_mask", "no_mask", "op_mask"]
+
+print('[INFO] Init tensorflow GPU')
+gpus = tf_config.experimental.list_physical_devices('GPU')
+if gpus:
+    try:
+        for gpu in gpus:
+            tf_config.experimental.set_memory_growth(gpu, True)
+    except RuntimeError as e:
+        print(e)
+
+# construct the training image generator for data augmentation
+aug = ImageDataGenerator(
+    rotation_range=20,
+    zoom_range=0.15,
+    width_shift_range=0.2,
+    height_shift_range=0.2,
+    shear_range=0.15,
+    horizontal_flip=True,
+    fill_mode="nearest")
+
+# load the MobileNetV2 network, ensuring the head FC layer sets are
+# left off
+baseModel = MobileNetV2(weights="imagenet", include_top=False,
+                        input_tensor=Input(shape=(400, 400, 3)))
+
 
 # grab the list of images in our dataset directory, then initialize
 # the list of data (i.e., images) and class images
@@ -57,21 +83,6 @@ labels = np.array(labels)
 
 (trainX, testX, trainY, testY) = train_test_split(data, labels,
                                                   test_size=0.3, stratify=labels, random_state=42)
-
-# construct the training image generator for data augmentation
-aug = ImageDataGenerator(
-    rotation_range=20,
-    zoom_range=0.15,
-    width_shift_range=0.2,
-    height_shift_range=0.2,
-    shear_range=0.15,
-    horizontal_flip=True,
-    fill_mode="nearest")
-
-# load the MobileNetV2 network, ensuring the head FC layer sets are
-# left off
-baseModel = MobileNetV2(weights="imagenet", include_top=False,
-                        input_tensor=Input(shape=(400, 400, 3)))
 
 # construct the head of the model that will be placed on top of the
 # the base model
