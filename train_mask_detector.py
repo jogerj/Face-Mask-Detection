@@ -24,8 +24,8 @@ import os
 # initialize the initial learning rate, number of epochs to train for,
 # and batch size
 INIT_LR = 1e-4
-EPOCHS = 10
-BS = 64
+EPOCHS = 60
+BS = 16
 
 DIRECTORY = "dataset"
 CATEGORIES = ["n95_mask", "no_mask", "op_mask"]
@@ -90,8 +90,8 @@ headModel = baseModel.output
 headModel = AveragePooling2D(pool_size=(7, 7))(headModel)
 headModel = Flatten(name="flatten")(headModel)
 headModel = Dense(128, activation="relu")(headModel)
-headModel = Dropout(0.5)(headModel)
-headModel = Dense(3, activation="softmax")(headModel)
+headModel = Dropout(0.5)(headModel)  # prevent overfitting
+headModel = Dense(3, activation="softmax")(headModel)  # output to 3 categories
 
 # place the head FC model on top of the base model (this will become
 # the actual model we will train)
@@ -130,7 +130,7 @@ print(classification_report(testY.argmax(axis=1), predIdxs,
                             target_names=lb.classes_))
 
 # serialize the model to disk
-model_filename = "mask_detector_testing8.tf"
+model_filename = "mask_detector_testing9.tf"
 print("[INFO] saving mask detector model... to", model_filename)
 model.save(model_filename, save_format="tf")
 print('[INFO] plotting history graph')
@@ -138,10 +138,15 @@ print('[INFO] plotting history graph')
 N = EPOCHS
 plt.style.use("ggplot")
 plt.figure()
-plt.plot(np.arange(0, N), H.history["loss"], label="train_loss")
-plt.plot(np.arange(0, N), H.history["val_loss"], label="val_loss")
-plt.plot(np.arange(0, N), H.history["accuracy"], label="train_acc")
-plt.plot(np.arange(0, N), H.history["val_accuracy"], label="val_acc")
+for h_key in H.history.keys():
+    try:
+        plt.plot(np.arange(0, N), H.history[h_key], label=h_key)
+    except:
+        continue
+# plt.plot(np.arange(0, N), H.history["loss"], label="train_loss")
+# plt.plot(np.arange(0, N), H.history["val_loss"], label="val_loss")
+# plt.plot(np.arange(0, N), H.history["accuracy"], label="train_acc")
+# plt.plot(np.arange(0, N), H.history["val_accuracy"], label="val_acc")
 plt.title("Training Loss and Accuracy")
 plt.xlabel("Epoch #")
 plt.ylabel("Loss/Accuracy")

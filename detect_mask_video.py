@@ -14,7 +14,7 @@ def detect_and_predict_mask(frame, faceNet, maskNet):
     # grab the dimensions of the frame and then construct a blob
     # from it
     (h, w) = frame.shape[:2]
-    blob = cv2.dnn.blobFromImage(frame, 1.0, (400, 400),
+    blob = cv2.dnn.blobFromImage(frame, 1.0, (224, 224),
                                  (104.0, 177.0, 123.0))
 
     # pass the blob through the network and obtain the face detections
@@ -51,8 +51,12 @@ def detect_and_predict_mask(frame, faceNet, maskNet):
             # extract the face ROI, convert it from BGR to RGB channel
             # ordering, resize it to 224x224, and preprocess it
             face = frame[startY:endY, startX:endX]
-            face = cv2.cvtColor(face, cv2.COLOR_BGR2RGB)
-            face = cv2.resize(face, (400, 400))
+            try:
+                face = cv2.cvtColor(face, cv2.COLOR_BGR2RGB)
+            except cv2.error:
+                # skip this frame if cv2 broken
+                continue
+            face = cv2.resize(face, (224, 224))
             face = img_to_array(face)
             face = preprocess_input(face)
 
@@ -81,7 +85,8 @@ weightsPath = r"face_detector/res10_300x300_ssd_iter_140000.caffemodel"
 faceNet = cv2.dnn.readNet(prototxtPath, weightsPath)
 
 # load the face mask detector model from disk
-maskNet = load_model("mask_detector_testing7.tf")
+# maskNet = load_model("mask_detector_testing7.tf")
+maskNet = load_model("mask_detector_testing9.tf")
 # maskNet = load_model("mask_detector_classifier.model")
 # classNet = load_model("mask_classifier.model")
 
@@ -98,70 +103,73 @@ vs = video_loader.load_video()
 # n_mask['no_mask'] = 0
 # n_mask['op_mask'] = 0
 # loop over the frames from the video stream
+
+enabled = True;
+
 while True:
     # grab the frame from the threaded video stream and resize it
     # to have a maximum width of 400 pixels
     try:
         frame = vs.read()
         frame = video_loader.transform(frame)
-        frame = imutils.resize(frame, width=600)
+        frame = imutils.resize(frame, width=720)
     except Exception as e:
         print(e)
-        prompt = input('Continue? [Y/n]')
-        if prompt.lower() == 'n':
-            break
-        continue
+        # prompt = input('Continue? [Y/n]')
+        # if prompt.lower() == 'n':
+        break
 
-    # detect faces in the frame and determine if they are wearing a
-    # face mask or not
-    (locs, preds) = detect_and_predict_mask(frame, faceNet, maskNet)
+    if enabled:
+        # detect faces in the frame and determine if they are wearing a
+        # face mask or not
+        (locs, preds) = detect_and_predict_mask(frame, faceNet, maskNet)
 
-    # loop over the detected face locations and their corresponding
-    # locations
-    # found_mask = {}
-    # found_mask['n95_mask'] = 0
-    # found_mask['no_mask'] = 0
-    # found_mask['op_mask'] = 0
-    for (box, pred) in zip(locs, preds):
-        # unpack the bounding box and predictions
-        (startX, startY, endX, endY) = box
-        (n95_mask, no_mask, op_mask) = pred
+        # loop over the detected face locations and their corresponding
+        # locations
+        # found_mask = {}
+        # found_mask['n95_mask'] = 0
+        # found_mask['no_mask'] = 0
+        # found_mask['op_mask'] = 0
+        for (box, pred) in zip(locs, preds):
+            # unpack the bounding box and predictions
+            (startX, startY, endX, endY) = box
+            (n95_mask, no_mask, op_mask) = pred
 
-        # determine the class label and color we'll use to draw
-        # the bounding box and text
-        mask = max(n95_mask, no_mask, op_mask)
-        if(mask == n95_mask):
-            label = "N95"
-            color = (0, 255, 0)
-            # found_mask['n95_mask'] += 1
-        elif(mask == no_mask):
-            label = "No Mask"
-            color = (0, 0, 255)
-            # found_mask['no_mask'] += 1
-        else:
-            label = "OP"
-            color = (0, 255, 255)
-            # found_mask['op_mask'] += 1
+            # determine the class label and color we'll use to draw
+            # the bounding box and text
+            mask = max(n95_mask, no_mask, op_mask)
+            if(mask == n95_mask):
+                label = "N95"
+                color = (0, 255, 0)
+                # found_mask['n95_mask'] += 1
+            elif(mask == no_mask):
+                label = "No Mask"
+                color = (0, 0, 255)
+                # found_mask['no_mask'] += 1
+            else:
+                label = "OP"
+                color = (0, 255, 255)
+                # found_mask['op_mask'] += 1
 
-        print("n95 {:.2f}%, no_mask {:.2f}%, op {:.2f}%".format(n95_mask*100, no_mask*100, op_mask*100))
-        # include the probability in the label
-        label = "{}: {:.2f}%".format(label, max(n95_mask, no_mask, op_mask) * 100)
+            print("n95 {:.2f}%, no_mask {:.2f}%, op {:.2f}%".format(n95_mask*100, no_mask*100, op_mask*100))
+            # include the probability in the label
+            label = "{}: {:.2f}%".format(label, max(n95_mask, no_mask, op_mask) * 100)
 
-        # display the label and bounding box rectangle on the output
-        # frame
-        cv2.putText(frame, label, (startX, startY - 10),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.45, color, 2)
-        cv2.rectangle(frame, (startX, startY), (endX, endY), color, 2)
+            # display the label and bounding box rectangle on the output
+            # frame
+            cv2.putText(frame, label, (startX, startY - 10),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.45, color, 2)
+            cv2.rectangle(frame, (startX, startY), (endX, endY), color, 2)
 
-    # for mask_type in ['n95_mask', 'no_mask', 'op_mask']:
-    #     if len(frame_history[mask_type])<2:
-    #         frame_history[mask_type].append(found_mask[mask_type])
-    #     else:
-    #         frame_history[mask_type].pop(0)
-    #         frame_history[mask_type].append(found_mask[mask_type])
-    #     diff = max(frame_history[mask_type]) - min(frame_history[mask_type])
-    #     n_mask[mask_type] += diff
-    # print('n95: {}, none: {}, op: {}'.format(n_mask['n95_mask'], n_mask['no_mask'], n_mask['op_mask']))
+        # for mask_type in ['n95_mask', 'no_mask', 'op_mask']:
+        #     if len(frame_history[mask_type])<2:
+        #         frame_history[mask_type].append(found_mask[mask_type])
+        #     else:
+        #         frame_history[mask_type].pop(0)
+        #         frame_history[mask_type].append(found_mask[mask_type])
+        #     diff = max(frame_history[mask_type]) - min(frame_history[mask_type])
+        #     n_mask[mask_type] += diff
+        # print('n95: {}, none: {}, op: {}'.format(n_mask['n95_mask'], n_mask['no_mask'], n_mask['op_mask']))
 
     # show the output frame
     cv2.imshow('Mask Detector', frame)
@@ -170,6 +178,8 @@ while True:
     # if the `q` key was pressed, break from the loop
     if cv2.waitKey(1) & 0xFF == ord("q"):
         break
+    elif cv2.waitKey(1) & 0xFF == ord("p"):
+        enabled = not enabled
 
 # do a bit of cleanup
 cv2.destroyAllWindows()
